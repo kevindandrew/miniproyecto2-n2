@@ -65,7 +65,7 @@ export default function Home() {
     useEffect(() => {
         const loadCities = async () => {
             try {
-                const response = await fetch('/static_json/cities.json');
+                const response = await fetch('/cities.json');
                 const data = await response.json();
                 setCities(data);
                 setFilteredCities(data);
