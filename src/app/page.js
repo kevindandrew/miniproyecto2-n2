@@ -1,101 +1,132 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useState } from 'react';
+import Sidebar from "./components/Sidebar";
+import Container from "./components/Container";
+import axios from 'axios';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [weatherData, setWeatherData] = useState(null);
+    const [city, setCity] = useState('Tokyo');
+    const [showModal, setShowModal] = useState(false);
+    const [cities, setCities] = useState([]);
+    const [filteredCities, setFilteredCities] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    const [unit, setUnit] = useState('C');
+
+    const apiKey = '8bfdadce3eae01a8bb5ff14516fce05b';
+
+    const toggleUnit = (newUnit) => setUnit(newUnit);
+
+    function getLocationAndFetchWeather() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("Latitud:", latitude, "Longitud:", longitude);
+                    const cityName = await findCityByCoordinates(latitude, longitude);
+                    if (cityName) {
+                        setCity(cityName); 
+                    } else {
+                        alert("No se encontró ninguna ciudad en esa ubicación.");
+                    }
+                },
+                (error) => {
+                    console.error("Error al obtener la ubicación: ", error);
+                    alert("No se pudo obtener la ubicación.");
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            alert("La geolocalización no es soportada por este navegador.");
+        }
+    }
+    const findCityByCoordinates = async (latitude, longitude) => {
+        const margin = 0.05;
+        try {
+            const response = await fetch('/static_json/cities.json');
+            const data = await response.json();
+
+          
+            const cityData = data.find(city => {
+                return (
+                    latitude >= city.lat - margin && latitude <= city.lat + margin &&
+                    longitude >= city.lon - margin && longitude <= city.lon + margin
+                );
+            });
+
+            return cityData ? cityData.name : null; 
+        } catch (error) {
+            console.error("Error al cargar los datos de las ciudades:", error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const loadCities = async () => {
+            try {
+                const response = await fetch('/static_json/cities.json');
+                const data = await response.json();
+                setCities(data);
+                setFilteredCities(data);
+            } catch (error) {
+                console.error("Error al cargar los datos de las ciudades:", error);
+            }
+        };
+
+        loadCities();
+    }, []);
+
+    useEffect(() => {
+        const fetchWeather = async () => {
+            if (!city) return; 
+            try {
+                const response = await axios.get(
+                    `https://api.openweathermap.org/data/2.5/forecast?q=${city}&APPID=${apiKey}&units=metric`
+                );
+                setWeatherData(response.data);
+            } catch (error) {
+                console.error("Error fetching weather data:", error);
+            }
+        };
+        fetchWeather();
+    }, [city, apiKey]);
+
+
+    const handleSearch = (event) => {
+        const query = event.target.value.toLowerCase();
+        setSearchQuery(query);
+        setFilteredCities(
+            cities.filter((city) => city.name.toLowerCase().includes(query))
+        );
+    };
+
+    const selectCity = (cityName) => {
+        setCity(cityName);
+        setShowModal(false); 
+    };
+
+    return (
+        <>
+            <div className="h-svh w-full md:flex">
+                <Sidebar
+                    weatherData={weatherData}
+                    city={city}
+                    showModal={showModal}
+                    setShowModal={setShowModal}
+                    searchQuery={searchQuery}
+                    handleSearch={handleSearch}
+                    filteredCities={filteredCities}
+                    selectCity={selectCity}
+                    getLocationAndFetchWeather={getLocationAndFetchWeather}
+                    unit={unit}
+                />
+                <Container
+                    weatherData={weatherData}
+                    unit={unit}
+                    toggleUnit={toggleUnit}
+                />
+            </div>
+        </>
+    );
 }
