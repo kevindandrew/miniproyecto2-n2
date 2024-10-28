@@ -44,7 +44,7 @@ export default function Home() {
     const findCityByCoordinates = async (latitude, longitude) => {
         const margin = 0.05;
         try {
-            const response = await fetch('/static_json/cities.json');
+            const response = await fetch('/cities.json');
             const data = await response.json();
 
           
