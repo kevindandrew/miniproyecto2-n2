@@ -80,12 +80,13 @@ export default function Container({ weatherData, unit, toggleUnit }) {
       </div>
 
       <div className='mt-5 w-full max-w-[650px]'>
-        <h3 className='text-white font-bold text-left text-2xl'>Today's Highlights</h3>
+        <h3 className='text-white font-bold text-left text-2xl'>Today&apos;s Highlights</h3>
+
         <div className='flex flex-col items-center justify-center gap-5 md:grid md:grid-cols-2'>
-          <Wind 
-              speed={dailyArray[0]?.wind.speed} 
-              windDirection={dailyArray[0]?.wind.deg} 
-              unit={isImperial ? 'imperial' : 'metric'} 
+          <Wind
+            speed={dailyArray[0]?.wind.speed}
+            windDirection={dailyArray[0]?.wind.deg}
+            unit={isImperial ? 'imperial' : 'metric'}
           />
           <Humidity value={Math.round(dailyArray[0]?.humidity)} />
           <Visibility distance={dailyArray[0]?.visibility / 1000 || 0} unit={currentUnit} />
